@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import connectDB from "./configs/mongodb.js";
+import clerkWebhooks from "./controllers/UserController.js";
 
 // APP CONFIGUE
 const PORT = process.env.PORT || 4000;
@@ -18,26 +19,28 @@ const app = express();
 
 // app.listen(PORT, () => console.log("server running on port " + PORT));
 
-// WRAP IN AN ASYNC FUNCTION
+// Wrap initialization in async function
 const startServer = async () => {
   try {
-    // CONNECT TO DATABASE
+    // Connect to MongoDB
     await connectDB();
+    console.log("Connected to database");
 
-    // INITIALIZE MIDDLEWARE
+    // Middleware
     app.use(express.json());
     app.use(cors());
 
-    // API ROUTES
-    app.get("/", (req, res) => res.send("API working"));
+    // Routes
+    app.get("/", (req, res) => res.send("API is working"));
+    app.post("/api/user/webhooks", clerkWebhooks); // Attach the controller to the route
 
-    // START SERVER
-    app.listen(PORT, () => console.log("Server running on port " + PORT));
+    // Start the server
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   } catch (error) {
     console.error("Error starting server:", error);
-    process.exit(1); // Exit with failure
+    process.exit(1);
   }
 };
 
-// START THE SERVER
+// Start the server
 startServer();
