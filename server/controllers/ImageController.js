@@ -34,6 +34,7 @@ const removeBgImage = async (req, res) => {
       {
         headers: {
           "x-api-key": process.env.CLIPDROP_API,
+          ...formData.getHeaders(),
         },
         responseType: "arraybuffer",
       }
