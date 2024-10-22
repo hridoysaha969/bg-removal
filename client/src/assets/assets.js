@@ -55,17 +55,20 @@ export const plans = [
     price: 1000,
     credits: 100,
     desc: "Best for personal use.",
+    priceId: "price_1QCZbu03UnRh84OeJW4Yp2G3",
   },
   {
     id: "Advanced",
     price: 5000,
     credits: 500,
     desc: "Best for business use.",
+    priceId: "price_1QCa7p03UnRh84OeZE14rEIx",
   },
   {
     id: "Business",
     price: 25000,
     credits: 5000,
     desc: "Best for enterprise use.",
+    priceId: "price_1QCa7p03UnRh84OehPCQ4s1f",
   },
 ];

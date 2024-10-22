@@ -6,9 +6,7 @@ import connectDB from "./configs/mongodb.js";
 import userRouter from "./routes/userRoutes.js";
 import imageRouter from "./routes/imageRoutes.js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "", {
-  apiVersion: "2024-09-30.acacia",
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // APP CONFIGUE
 const PORT = process.env.PORT || 4000;
@@ -23,24 +21,26 @@ app.use(cors());
 app.get("/", (req, res) => res.send("Api working"));
 app.use("/api/user", userRouter);
 app.use("/api/image", imageRouter);
-app.post("/create-payment-intent", async (req, res) => {
-  const { amount } = req.body;
+app.post("/create-checkout-session", async (req, res) => {
+  const { priceId } = req.body;
 
   try {
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount,
-      currency: "usd",
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price: priceId, // Use the Stripe price ID (pre-configured in Stripe dashboard)
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: "http://localhost:5173/",
+      cancel_url: "http://localhost:5173/buy",
     });
 
-    res.send({
-      clientSecret: paymentIntent.client_secret,
-    });
+    res.json({ url: session.url });
   } catch (error) {
-    res.status(400).send({
-      error: {
-        message: error.message,
-      },
-    });
+    res.status(500).json({ error: error.message });
   }
 });
 

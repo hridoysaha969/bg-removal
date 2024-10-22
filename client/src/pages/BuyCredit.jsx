@@ -1,147 +1,35 @@
-import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { assets, plans } from "../assets/assets";
 import { useState } from "react";
+import { assets, plans } from "../assets/assets";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
 
 const BuyCredit = () => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [selectedPrice, setSelectedPrice] = useState(null);
-  const [paymentSuccess, setPaymentSuccess] = useState(null);
-  const [errorMessage, setErrorMessage] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate();
+  const handlePurChase = async (priceId) => {
+    setLoading(true);
 
-  // Triggered when a user selects a plan
-  const handlePurchase = (price) => {
-    setSelectedPrice(price); // Set the selected plan's price
-    setErrorMessage(""); // Clear any previous errors
-    setPaymentSuccess(""); // Clear any success messages
-  };
+    try {
+      const response = await fetch(
+        import.meta.env.VITE_BACKEND_URL + "/create-checkout-session",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ priceId }),
+        }
+      );
 
-  // const handleSubmit = async (amount) => {
-  //   if (!stripe || !elements) {
-  //     return;
-  //   }
+      const data = await response.json();
+      console.log(data.url);
 
-  //   const cardElement = elements.getElement(CardElement);
-
-  //   // Step 1: Validate Card Element
-  //   const { error: methodError, paymentMethod } =
-  //     await stripe.createPaymentMethod({
-  //       type: "card",
-  //       card: cardElement,
-  //     });
-
-  //   if (methodError) {
-  //     // Display the error if card details are incomplete or invalid
-  //     setErrorMessage(methodError.message);
-  //     toast.error(errorMessage);
-  //     return;
-  //   }
-
-  //   const response = await fetch(
-  //     import.meta.env.VITE_BACKEND_URL + "/create-payment-intent",
-  //     {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({ amount }),
-  //     }
-  //   );
-
-  //   const { clientSecret } = await response.json();
-
-  //   if (!clientSecret) {
-  //     setErrorMessage("Failed to retrieve client secret.");
-  //     toast.error(errorMessage);
-  //     return;
-  //   }
-  //   setIsLoading(true);
-
-  //   const { error, paymentIntent } = await stripe.confirmCardPayment(
-  //     clientSecret,
-  //     {
-  //       payment_method: paymentMethod.id,
-  //     }
-  //   );
-
-  //   if (error) {
-  //     setErrorMessage(error.message);
-  //     toast.error(errorMessage);
-  //   } else if (paymentIntent.status === "succeeded") {
-  //     setPaymentSuccess("Payment successful!");
-  //     toast.success(paymentSuccess);
-  //   }
-  //   setIsLoading(false);
-  // };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!stripe || !elements || !selectedPrice) {
-      return;
+      window.location.href = data.url;
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      toast.error("Faild to purchase! Try again.");
+    } finally {
+      setLoading(false);
     }
-
-    const cardElement = elements.getElement(CardElement);
-
-    // Step 1: Validate card details
-    const { error: methodError, paymentMethod } =
-      await stripe.createPaymentMethod({
-        type: "card",
-        card: cardElement,
-      });
-
-    if (methodError) {
-      setErrorMessage(methodError.message);
-      toast.error(errorMessage);
-      return;
-    }
-
-    // Step 2: Fetch client_secret from backend
-    const response = await fetch(
-      import.meta.env.VITE_BACKEND_URL + "/create-payment-intent",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ amount: selectedPrice }), // Use the selected price
-      }
-    );
-
-    const { clientSecret } = await response.json();
-
-    if (!clientSecret) {
-      setErrorMessage("Failed to retrieve client secret.");
-      toast.error(errorMessage);
-      return;
-    }
-
-    setIsLoading(true);
-
-    // Step 3: Confirm the card payment
-    const { error, paymentIntent } = await stripe.confirmCardPayment(
-      clientSecret,
-      {
-        payment_method: paymentMethod.id,
-      }
-    );
-
-    if (error) {
-      setErrorMessage(error.message);
-      toast.error(errorMessage);
-    } else if (paymentIntent.status === "succeeded") {
-      setPaymentSuccess("Payment successful!");
-      toast.success("Congrats!" + paymentSuccess);
-      setSelectedPrice(null);
-      navigate("/");
-    }
-
-    setIsLoading(false);
   };
 
   return (
@@ -167,36 +55,16 @@ const BuyCredit = () => {
               {item.credits} credits
             </p>
 
-            {/* Purchase button triggers handleSubmit */}
             <button
-              disabled={
-                !stripe ||
-                isLoading ||
-                (selectedPrice != item.price && selectedPrice != null)
-              }
-              onClick={() => handlePurchase(item.price)} // Trigger the selected price
+              disabled={loading}
+              onClick={() => handlePurChase(item.priceId)}
               className="w-full bg-gray-800 text-white mt-8 text-sm rounded-md py-2.5 min-w-52 disabled:bg-gray-500"
             >
-              {isLoading ? "Loading..." : "Purchase"}
+              Purchase
             </button>
           </div>
         ))}
       </div>
-      {/* Single CardElement for payment */}
-      {selectedPrice && (
-        <form onSubmit={handleSubmit} className="mt-8 mx-auto max-w-4xl">
-          <CardElement /> {/* Only one CardElement */}
-          <button
-            disabled={!stripe || !selectedPrice || isLoading}
-            type="submit"
-            className="w-full bg-blue-600 text-white mt-8 text-sm rounded-md py-2.5 min-w-52"
-          >
-            {isLoading
-              ? "Processing..."
-              : `Pay ${selectedPrice ? `$${selectedPrice / 100}` : ""}`}
-          </button>
-        </form>
-      )}
     </div>
   );
 };
