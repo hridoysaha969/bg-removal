@@ -18,7 +18,7 @@ connectDB();
 // INITIALIZE MIDDLEWARE
 app.use(express.json());
 app.use(cors());
-// app.use(bodyParser.raw({ type: "application/json" }));
+app.use(bodyParser.raw({ type: "application/json" }));
 
 // API ROUTES
 app.get("/", (req, res) => res.send("Api working"));
@@ -54,13 +54,13 @@ app.post(
   "/webhook",
   bodyParser.raw({ type: "application/json" }),
   async (req, res) => {
+    const body = await req.body;
     const sig = req.headers["stripe-signature"];
     const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET;
 
     let event;
 
     try {
-      const body = await req.body.text();
       event = stripe.webhooks.constructEvent(body, sig, endpointSecret);
     } catch (error) {
       console.log(
