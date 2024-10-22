@@ -34,8 +34,8 @@ app.post("/create-checkout-session", async (req, res) => {
         },
       ],
       mode: "payment",
-      success_url: "http://localhost:5173/",
-      cancel_url: "http://localhost:5173/buy",
+      success_url: "https://bg-removal-bay.vercel.app/",
+      cancel_url: "https://bg-removal-bay.vercel.app/buy",
     });
 
     res.json({ url: session.url });
