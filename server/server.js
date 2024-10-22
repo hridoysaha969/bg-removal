@@ -15,6 +15,43 @@ const PORT = process.env.PORT || 4000;
 const app = express();
 connectDB();
 
+app.use("/webhook", express.raw({ type: "application/json" }));
+
+// INITIALIZE MIDDLEWARE
+app.use(express.json());
+app.use(cors());
+// app.use(express.raw({ type: "application/json" }));
+
+// API ROUTES
+app.get("/", (req, res) => res.send("Api working"));
+app.use("/api/user", userRouter);
+app.use("/api/image", imageRouter);
+app.post("/create-checkout-session", async (req, res) => {
+  const { priceId, creditBalance, clerkId } = req.body;
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price: priceId, // Use the Stripe price ID (pre-configured in Stripe dashboard)
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: "https://bg-removal-bay.vercel.app/",
+      cancel_url: "https://bg-removal-bay.vercel.app/buy",
+      metadata: {
+        clerkId, // Storing email in metadata
+        creditBalance: creditBalance,
+      },
+    });
+
+    res.json({ url: session.url });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 app.post(
   "/webhook",
   express.raw({ type: "application/json" }),
@@ -61,41 +98,5 @@ app.post(
     res.json({ received: true });
   }
 );
-
-// INITIALIZE MIDDLEWARE
-app.use(express.json());
-app.use(cors());
-// app.use(express.raw({ type: "application/json" }));
-
-// API ROUTES
-app.get("/", (req, res) => res.send("Api working"));
-app.use("/api/user", userRouter);
-app.use("/api/image", imageRouter);
-app.post("/create-checkout-session", async (req, res) => {
-  const { priceId, creditBalance, clerkId } = req.body;
-
-  try {
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price: priceId, // Use the Stripe price ID (pre-configured in Stripe dashboard)
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      success_url: "https://bg-removal-bay.vercel.app/",
-      cancel_url: "https://bg-removal-bay.vercel.app/buy",
-      metadata: {
-        clerkId, // Storing email in metadata
-        creditBalance: creditBalance,
-      },
-    });
-
-    res.json({ url: session.url });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 app.listen(PORT, () => console.log("server running on port " + PORT));
