@@ -1,7 +1,6 @@
 import "dotenv/config";
 import express from "express";
 import Stripe from "stripe";
-import bodyParser from "body-parser";
 import cors from "cors";
 import connectDB from "./configs/mongodb.js";
 import userRouter from "./routes/userRoutes.js";
@@ -15,7 +14,7 @@ const PORT = process.env.PORT || 4000;
 const app = express();
 connectDB();
 
-app.use("/webhook", express.raw({ type: "application/json" }));
+// app.use("/webhook", express.raw({ type: "application/json" }));
 
 // INITIALIZE MIDDLEWARE
 app.use(express.json());
@@ -53,14 +52,18 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 app.post("/webhook", async (req, res) => {
-  let event = req.body;
-  // const bodyAsString = JSON.stringify(req.body);
   const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET;
+  const sig = req.headers["stripe-signature"];
+
+  let event;
 
   if (endpointSecret) {
-    const sig = req.headers["stripe-signature"];
     try {
-      event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+      event = stripe.webhooks.constructEvent(
+        JSON.stringify(req.body),
+        sig,
+        endpointSecret
+      );
     } catch (error) {
       console.log(
         `⚠️  Webhook signature verification failed: ${error.message}`
@@ -78,8 +81,7 @@ app.post("/webhook", async (req, res) => {
     try {
       const updatedUser = await User.findOneAndUpdate(
         { clerkId: clerkId },
-        { $inc: { creditBalance } },
-        { new: true, runValidators: true }
+        { creditBalance }
       );
 
       if (!updatedUser) {
