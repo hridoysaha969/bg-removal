@@ -16,12 +16,9 @@ const app = express();
 connectDB();
 
 app.use(
-  bodyParser.json({
-    verify: function (req, res, buf) {
-      var url = req.originalUrl;
-      if (url.startsWith("/stripe")) {
-        req.rawBody = buf.toString();
-      }
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf;
     },
   })
 );
