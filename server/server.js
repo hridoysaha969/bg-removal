@@ -72,7 +72,7 @@ app.post("/webhook", async (req, res) => {
     try {
       const updatedUser = await User.findOneAndUpdate(
         { clerkId: clerkId },
-        { creditBalance: creditBalance },
+        { $inc: { creditBalance } },
         { new: true, runValidators: true }
       );
 
