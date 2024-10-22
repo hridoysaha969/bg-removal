@@ -52,7 +52,7 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 app.post("/webhook", async (req, res) => {
-  const sig = request.headers["stripe-signature"];
+  const sig = req.headers["stripe-signature"];
   const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET;
 
   let event;
