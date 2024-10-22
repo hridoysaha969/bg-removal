@@ -10,12 +10,10 @@ import imageRouter from "./routes/imageRoutes.js";
 import User from "./models/userModel.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET;
 
 // APP CONFIGUE
 const PORT = process.env.PORT || 4000;
 const app = express();
-const router = express.Router();
 connectDB();
 
 // INITIALIZE MIDDLEWARE
@@ -54,7 +52,8 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 app.post("/webhook", async (req, res) => {
-  const sig = req.headers["stripe-signature"];
+  const sig = request.headers["stripe-signature"];
+  const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET;
 
   let event;
 
