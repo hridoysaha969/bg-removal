@@ -25,13 +25,14 @@ app.get("/", (req, res) => res.send("Api working"));
 app.use("/api/user", userRouter);
 app.use("/api/image", imageRouter);
 app.post("/webhook", async (req, res) => {
+  const bodyAsString = JSON.stringify(req.body);
   const sig = req.headers["stripe-signature"];
   const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET;
 
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+    event = stripe.webhooks.constructEvent(bodyAsString, sig, endpointSecret);
   } catch (error) {
     console.log(`⚠️  Webhook signature verification failed: ${error.message}`);
     return res.sendStatus(400);
