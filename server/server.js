@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import Stripe from "stripe";
+import bodyParser from "body-parser";
 import cors from "cors";
 import connectDB from "./configs/mongodb.js";
 import userRouter from "./routes/userRoutes.js";
@@ -14,12 +15,20 @@ const PORT = process.env.PORT || 4000;
 const app = express();
 connectDB();
 
-// app.use("/webhook", express.raw({ type: "application/json" }));
+app.use(
+  bodyParser.json({
+    verify: function (req, res, buf) {
+      var url = req.originalUrl;
+      if (url.startsWith("/stripe")) {
+        req.rawBody = buf.toString();
+      }
+    },
+  })
+);
 
 // INITIALIZE MIDDLEWARE
 app.use(express.json());
 app.use(cors());
-// app.use(express.raw({ type: "application/json" }));
 
 // API ROUTES
 app.get("/", (req, res) => res.send("Api working"));
@@ -59,11 +68,7 @@ app.post("/webhook", async (req, res) => {
 
   if (endpointSecret) {
     try {
-      event = stripe.webhooks.constructEvent(
-        JSON.stringify(req.body),
-        sig,
-        endpointSecret
-      );
+      event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
     } catch (error) {
       console.log(
         `⚠️  Webhook signature verification failed: ${error.message}`
