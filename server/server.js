@@ -1,6 +1,5 @@
 import "dotenv/config";
 import express from "express";
-import mongoose from "mongoose";
 import Stripe from "stripe";
 import bodyParser from "body-parser";
 import cors from "cors";
@@ -19,7 +18,7 @@ connectDB();
 // INITIALIZE MIDDLEWARE
 app.use(express.json());
 app.use(cors());
-app.use(bodyParser.raw({ type: "application/json" }));
+// app.use(bodyParser.raw({ type: "application/json" }));
 
 // API ROUTES
 app.get("/", (req, res) => res.send("Api working"));
@@ -53,7 +52,7 @@ app.post("/create-checkout-session", async (req, res) => {
 });
 app.post(
   "/webhook",
-  express.raw({ type: "application/json" }),
+  bodyParser.raw({ type: "application/json" }),
   async (req, res) => {
     const sig = req.headers["stripe-signature"];
     const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET;
