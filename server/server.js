@@ -52,51 +52,47 @@ app.post("/create-checkout-session", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-app.post(
-  "/webhook",
-  express.raw({ type: "application/json" }),
-  async (req, res) => {
-    let event = req.body;
-    // const bodyAsString = JSON.stringify(req.body);
-    const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET;
+app.post("/webhook", async (req, res) => {
+  let event = req.body;
+  // const bodyAsString = JSON.stringify(req.body);
+  const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET;
 
-    if (endpointSecret) {
-      const sig = req.headers["stripe-signature"];
-      try {
-        event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-      } catch (error) {
-        console.log(
-          `⚠️  Webhook signature verification failed: ${error.message}`
-        );
-        return res.sendStatus(400);
-      }
+  if (endpointSecret) {
+    const sig = req.headers["stripe-signature"];
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+    } catch (error) {
+      console.log(
+        `⚠️  Webhook signature verification failed: ${error.message}`
+      );
+      return res.sendStatus(400);
     }
-
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
-
-      const clerkId = session.metadata.clerkId;
-      const creditBalance = session.metadata.creditBalance;
-
-      try {
-        const updatedUser = await User.findOneAndUpdate(
-          { clerkId: clerkId },
-          { $inc: { creditBalance } },
-          { new: true, runValidators: true }
-        );
-
-        if (!updatedUser) {
-          return res.status(404).json({ message: "User not found" });
-        }
-        res.json(updatedUser);
-      } catch (error) {
-        console.error("Error updating user credit balance:", error);
-        return res.status(500).send("Internal Server Error");
-      }
-    }
-
-    res.json({ received: true });
   }
-);
+
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object;
+
+    const clerkId = session.metadata.clerkId;
+    const creditBalance = session.metadata.creditBalance;
+
+    try {
+      const updatedUser = await User.findOneAndUpdate(
+        { clerkId: clerkId },
+        { $inc: { creditBalance } },
+        { new: true, runValidators: true }
+      );
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user credit balance:", error);
+      return res.status(500).send("Internal Server Error");
+    }
+  }
+
+  res.json({ received: true });
+});
 
 app.listen(PORT, () => console.log("server running on port " + PORT));
