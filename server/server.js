@@ -24,6 +24,32 @@ app.use(bodyParser.raw({ type: "application/json" }));
 app.get("/", (req, res) => res.send("Api working"));
 app.use("/api/user", userRouter);
 app.use("/api/image", imageRouter);
+app.post("/create-checkout-session", async (req, res) => {
+  const { priceId, creditBalance, clerkId } = req.body;
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price: priceId, // Use the Stripe price ID (pre-configured in Stripe dashboard)
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: "https://bg-removal-bay.vercel.app/",
+      cancel_url: "https://bg-removal-bay.vercel.app/buy",
+      metadata: {
+        clerkId, // Storing email in metadata
+        creditBalance: creditBalance,
+      },
+    });
+
+    res.json({ url: session.url });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 app.post("/webhook", async (req, res) => {
   const bodyAsString = JSON.stringify(req.body);
   const sig = req.headers["stripe-signature"];
@@ -62,32 +88,6 @@ app.post("/webhook", async (req, res) => {
   }
 
   res.json({ received: true });
-});
-app.post("/create-checkout-session", async (req, res) => {
-  const { priceId, creditBalance, clerkId } = req.body;
-
-  try {
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price: priceId, // Use the Stripe price ID (pre-configured in Stripe dashboard)
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      success_url: "https://bg-removal-bay.vercel.app/",
-      cancel_url: "https://bg-removal-bay.vercel.app/buy",
-      metadata: {
-        clerkId, // Storing email in metadata
-        creditBalance: creditBalance,
-      },
-    });
-
-    res.json({ url: session.url });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
 });
 
 app.listen(PORT, () => console.log("server running on port " + PORT));
