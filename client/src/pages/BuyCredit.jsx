@@ -1,34 +1,40 @@
 import { useState } from "react";
 import { assets, plans } from "../assets/assets";
 import { toast } from "react-toastify";
+import { useUser } from "@clerk/clerk-react";
 
 const BuyCredit = () => {
   const [loading, setLoading] = useState(false);
+  const { user } = useUser();
 
-  const handlePurChase = async (priceId) => {
+  const handlePurChase = async (priceId, creditBalance) => {
     setLoading(true);
 
-    try {
-      const response = await fetch(
-        import.meta.env.VITE_BACKEND_URL + "/create-checkout-session",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ priceId }),
-        }
-      );
+    if (user) {
+      try {
+        const response = await fetch(
+          import.meta.env.VITE_BACKEND_URL + "/create-checkout-session",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              priceId,
+              creditBalance,
+              email: user.id,
+            }),
+          }
+        );
 
-      const data = await response.json();
-      console.log(data.url);
-
-      window.location.href = data.url;
-    } catch (error) {
-      console.error("Error creating checkout session:", error);
-      toast.error("Faild to purchase! Try again.");
-    } finally {
-      setLoading(false);
+        const data = await response.json();
+        window.location.href = data.url;
+      } catch (error) {
+        console.error("Error creating checkout session:", error);
+        toast.error("Faild to purchase! Try again.");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -57,7 +63,7 @@ const BuyCredit = () => {
 
             <button
               disabled={loading}
-              onClick={() => handlePurChase(item.priceId)}
+              onClick={() => handlePurChase(item.priceId, item.credits)}
               className="w-full bg-gray-800 text-white mt-8 text-sm rounded-md py-2.5 min-w-52 disabled:bg-gray-500"
             >
               Purchase
